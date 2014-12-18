@@ -190,7 +190,7 @@ public class ClassEvent {
 					if (daysCount == 3) days = "Mon-Wed-Fri";
 					else days = "Mon-Wed";
 				} else days = "Tue-Thu";
-				System.out.printf("Room: %d, capacity: %d, daysCount: %-12s, start time: %02d:%02d, duration: %d minutes\n",
+				System.out.printf("Room: %d, capacity: %d, days: %-12s, start time: %02d:%02d, duration: %d minutes\n",
 						classes[i].roomId.getValue(), classes[i].capacity.getValue(), days, startHour, startMinute, classes[i].duration);
 			}
 			solver.isFeasible();
