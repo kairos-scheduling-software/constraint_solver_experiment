@@ -1,0 +1,57 @@
+{
+	"api-key": "0123456789",
+	"name": "Spring 2014 class schedule",
+	"resources": [
+		{
+			"type": "time",
+			"name": "Time block 1",
+			"time": [[45,70], [115,149], [204,220]],
+			"tag": "4credit"
+		},
+		{
+			"type": "room",
+			"name": "WEB L102",
+			"time": [[1,0,150], [3,210,245]],
+			"capacity": 80
+		},
+		{
+			"type": "professor",
+			"name": "John Rehger",
+			"time": [[30,75], [110,160], [204,235]]
+		},
+		{
+			"type": "professor",
+			"name": "Jim Germain",
+			"time": [[60,90], [150,180]]
+		},
+        {
+			"type": "room",
+			"name": "MEB 2535",
+			"time": [[0,400,950], [2,545,1000], [4,500,900]],
+			"capacity": 60
+		}
+	],
+	"events": [
+		{
+			"id": 01,
+			"name": "CS3500",
+			"constraints": [
+				{
+					"type": "hard",
+					"resource": "professor",
+					"constraint": "professor.name == 'John Rehger'"
+				},
+				{
+					"type": "hard",
+					"resource": "room",
+					"constraint": "room.capacity >= 50"
+				},
+				{
+					"type": "hard",
+					"resource": "time",
+					"constraint": "time.tag == 4credit"
+				}
+			]
+		}
+	]
+}

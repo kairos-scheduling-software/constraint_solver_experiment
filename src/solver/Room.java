@@ -19,23 +19,21 @@ public class Room {
 	public TimeBlock[] timeBlock;
 	
 	public Room(int _id, int _capacity, TimeBlock[] _timeBlock) {
-		id = _id;
-		capacity = _capacity;
-		timeBlock = _timeBlock;
+		this(_id, "", _capacity, _timeBlock);
 	}
 	
 	public Room(int _id, String _name, int _capacity, TimeBlock[] _timeBlock) {
-		id = _id;
-		name = _name;
-		capacity = _capacity;
-		timeBlock = _timeBlock;
+		this.id = _id;
+		this.name = _name;
+		this.capacity = _capacity;
+		this.timeBlock = _timeBlock;
 	}
 	
 	public Room(int _id, JSONObject jsonObj) throws JSONException {
-		id = _id;
-		name = jsonObj.getString("name");
-		capacity = jsonObj.getInt("capacity");
-		timeBlock = TimeBlock.parseTimeBlock(jsonObj.getJSONArray("time"));
+		this.id = _id;
+		this.name = jsonObj.getString("name");
+		this.capacity = jsonObj.getInt("capacity");
+		this.timeBlock = TimeBlock.parseTimeBlock(jsonObj.getJSONArray("time"));
 	}
 	
 	public String toString() {

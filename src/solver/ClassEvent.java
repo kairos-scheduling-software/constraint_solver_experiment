@@ -1,5 +1,9 @@
 package solver;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import solver.constraints.*;
 import solver.variables.*;
 
@@ -12,14 +16,19 @@ import solver.variables.*;
 //import org.chocosolver.solver.variables.VariableFactory;
 
 public class ClassEvent {
-	Solver solver;
-	IntVar capacity;
+	int id;
+	String name;
 	String professor;
+
 	int days_count;
 	int duration;
+	
+	Solver solver;
+	IntVar capacity;
+	IntVar roomId;
+	
 	IntVar startTime, endTime;
 	IntVar startDay;
-	IntVar roomId;
 	public Constraint eventConstraint;
 	
 	static int[] mwf = {450, 515, 580, 645, 710, 775, 840, 905, 970};
@@ -29,6 +38,21 @@ public class ClassEvent {
 	
 	// days_count and startDay together defines the days_of_week for a class
 	
+	public ClassEvent(Solver _solver, int[] _roomIds, JSONObject jsonClass) throws JSONException {
+		this.solver = _solver;
+		
+		this.id = jsonClass.getInt("id");
+		this.name = jsonClass.getString("name");
+		this.professor = jsonClass.getString("professor");
+		
+		this.days_count = jsonClass.getInt("days");
+		this.duration = jsonClass.getInt("duration");
+		
+		this.capacity = VariableFactory.fixed(jsonClass.getInt("capacity"), this.solver);
+		this.roomId = VariableFactory.enumerated("room id", _roomIds, this.solver);
+		
+		this.initStartTime();
+	}
 	
 	public ClassEvent(Solver _solver, int room_count, int _capacity, String _professor,
 			int _days, int _duration) {
@@ -41,8 +65,25 @@ public class ClassEvent {
 		days_count = _days;
 		duration = _duration;
 		
+		this.initStartTime();
+	}
+	
+	private void initStartTime() {
+		int[] blocks;
+		if (days_count == 3) {
+			if (duration != 80) blocks = mwf;
+			else blocks = mwf80;
+		} else {
+			if (duration == 80) {
+				blocks = new int[]{450, 485, 550, 645, 710, 745, 805, 840, 900, 940};
+			}
+			else if (duration == 170) {
+				blocks = new int[]{450, 515, 550, 580, 645, 710, 745, 775, 840, 905, 940, 970};
+			} else blocks = mwf;
+		}
+		
 		startTime = VariableFactory.enumerated("class start time",
-				initStartTime(days_count, duration), solver);
+				blocks, solver);
 		endTime = VariableFactory.offset(startTime, duration);
 		
 		if (duration == 50) {
@@ -68,23 +109,6 @@ public class ClassEvent {
 						IntConstraintFactory.member(startTime, th)));
 			}
 		}
-	}
-	
-	static private int[] initStartTime(int daysCount, int duration) {
-		int[] blocks;
-		if (daysCount == 3) {
-			if (duration != 80) blocks = mwf;
-			else blocks = mwf80;
-		} else {
-			if (duration == 80) {
-				blocks = new int[]{450, 485, 550, 645, 710, 745, 805, 840, 900, 940};
-			}
-			else if (duration == 170) {
-				blocks = new int[]{450, 515, 550, 580, 645, 710, 745, 775, 840, 905, 940, 970};
-			} else blocks = mwf;
-		}
-		
-		return blocks;
 	}
 	
 	public Constraint notOverlap(ClassEvent other) {
@@ -114,87 +138,21 @@ public class ClassEvent {
 		return LogicalConstraintFactory.or(_id, _fit);
 	}
 	
-	public static Constraint buildConstraint(Solver solver, ClassEvent[] classes, Room[] rooms) {
-		Constraint constraint = IntConstraintFactory.TRUE(solver);
-		int n = classes.length;
-		for (int i = 0; i < n; i++) {
-			for (int j = i + 1; j < n; j++) {
-				constraint = LogicalConstraintFactory.and(constraint,
-						classes[i].notOverlap(classes[j]));
-			}
-			for (Room room : rooms) {
-				constraint = LogicalConstraintFactory.and(constraint,
-						classes[i].roomConstraint(room));
-			}
-			constraint = LogicalConstraintFactory.and(constraint, classes[i].eventConstraint);
+	public static ClassEvent[] parseClasses(Solver _solver,
+			int[] _roomIds, JSONArray jsonClasses) throws JSONException {
+		ClassEvent[] classes = new ClassEvent[jsonClasses.length()];
+		for (int i = 0; i < classes.length; i++) {
+			classes[i] = new ClassEvent(_solver, _roomIds, jsonClasses.getJSONObject(i));
 		}
-		
-		return constraint;
-	}
-	
-	private static Room[] initRooms() {
-		Room[] rooms = new Room[2];
-		
-		TimeBlock[] blocks = new TimeBlock[5];
-		for (int i = 0; i < 5; i++) {
-			blocks[i] = new TimeBlock(i, 600, 960);
-		}
-		rooms[0] = new Room(0, 80, blocks);
-		
-		blocks = new TimeBlock[3];
-		for (int i = 0; i < 3; i++) {
-			blocks[i] = new TimeBlock(i+1, 700, 1100);
-		}
-		rooms[1] = new Room(1, 50, blocks);
-		
-		return rooms;
-	}
-	
-	private static ClassEvent[] initClass(Solver solver) {
-		ClassEvent[] classes = new ClassEvent[4];
-		
-		classes[0] = new ClassEvent(solver, 2, 60, "prof1", 2, 170);
-		classes[1] = new ClassEvent(solver, 2, 50, "prof2", 3, 50);
-		classes[2] = new ClassEvent(solver, 2, 50, "prof3", 2, 170);
-		classes[3] = new ClassEvent(solver, 2, 40, "prof4", 2, 50);
 		
 		return classes;
 	}
-
+	
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		Solver solver = new Solver();
-		
-		Room[] rooms = initRooms();
-		ClassEvent[] classes = initClass(solver);
-		for (Room room : rooms) {
-			System.out.println(room);
-		}
-		
-		Constraint constraint = buildConstraint(solver, classes, rooms);
-		
-		solver.post(constraint);
-		
-		if(solver.findSolution()) {
-			for (int i = 0; i < 4; i++) {
-				int startTime = classes[i].startTime.getValue();
-				int startHour = startTime / 60;
-				int startMinute = startTime % 60;
-				int daysCount = classes[i].days_count;
-				int startDay = classes[i].startDay.getValue();
-				String days = "";
-				if (startDay == 0) {
-					if (daysCount == 3) days = "Mon-Wed-Fri";
-					else days = "Mon-Wed";
-				} else days = "Tue-Thu";
-				System.out.printf("Room: %d, capacity: %d, days: %-12s, start time: %02d:%02d, duration: %d minutes\n",
-						classes[i].roomId.getValue(), classes[i].capacity.getValue(), days, startHour, startMinute, classes[i].duration);
-			}
-			solver.isFeasible();
-		}
 		
 	}
 
